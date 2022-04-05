@@ -1,6 +1,8 @@
 plugins{
     id "io.github.jamesfchen.bundle-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 android {
     defaultConfig {
         buildConfigField('String', 'WEATHER_APP_ID', '"fb306d52c9aaff4a1ae20fbe8aa38afb"')

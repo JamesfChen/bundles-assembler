@@ -1,21 +1,12 @@
 package com.jamesfchen.b
 
+
 import org.gradle.api.Project
 
-class JarModulePlugin extends AbsModuleifyPlugin {
-
-    @Override
-    protected String mainPlugin() {
-        return 'java-library'
-    }
+abstract class AndroidWithMavenPlugin extends AbsAndroidPlugin {
 
     @Override
     void addPlugins(Project project) {
-        project.plugins.apply('kotlin')
-    }
-
-    @Override
-    void onApply(Project project) {
         def simepleName = project.gradle.sourcePath2SimpleNameMap[project.path]
         if (simepleName) {
             project.plugins.apply("io.github.jamesfchen.module-publisher-plugin")
@@ -27,5 +18,9 @@ class JarModulePlugin extends AbsModuleifyPlugin {
                 website = "https://github.com/JamesfChen/bundles-assembler"
             }
         }
+    }
+    @Override
+    void onApply(Project project) {
+        super.onApply(project)
     }
 }

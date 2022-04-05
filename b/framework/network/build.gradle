@@ -1,6 +1,8 @@
 plugins{
     id "io.github.jamesfchen.foundation-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 //apply from: "${rootDir.path}/script/foundation_module.gradle"
 dependencies {
     testImplementation files('libs/jsoup-1.12.1.jar')

@@ -108,8 +108,7 @@
       "simpleName": "plugin-im-chatroom",
       "sourcePath": ":im-module:chatroom",
       "format": "bundle",
-      "group": "im",
-      "dynamic": "local-plugin"
+      "group": "im"
     }
   ]
 }

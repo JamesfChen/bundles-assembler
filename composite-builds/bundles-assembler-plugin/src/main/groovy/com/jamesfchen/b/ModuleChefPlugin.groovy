@@ -75,169 +75,169 @@ class ModuleChefPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        project.tasks.create(name: "includeSourceModule", group: 'module chef') {
-            doLast {
-                if (project.hasProperty("moduleName")) {
-                    def moduleName = project.getProperty("moduleName")
-                    includeM(project, moduleName, false)
-                } else {
-                    throw new IllegalArgumentException("请传想要include的模块 eg. ./gradlew includeSourceModule -PmoduleName=home-myhome")
-                }
-            }
-
-        }
-        project.tasks.create(name: "includeBinaryModule", group: 'module chef') {
-            doLast {
-                if (project.hasProperty("moduleName")) {
-                    def moduleName = project.getProperty("moduleName")
-                    includeM(project, moduleName, true)
-                } else {
-                    throw new IllegalArgumentException("请传想要include的模块 eg. ./gradlew includeBinaryModule -PmoduleName=home-myhome")
-                }
-            }
-        }
-        project.tasks.create(name: "excludeModule", group: 'module chef') {
-            doLast {
-                if (project.hasProperty("moduleName")) {
-                    def moduleName = project.getProperty("moduleName")
-                    excludeM(project, moduleName)
-                } else {
-                    throw new IllegalArgumentException("请传想要exclude的模块 eg. ./gradlew excludeModule -PmoduleName=home-myhome")
-                }
-            }
-        }
-        project.tasks.create(name: "includeAll", group: 'module chef') {
-            doLast {
-                def localProperties = new Properties()
-                def localPropertiesFile = new File(project.rootDir, 'local.properties')
-                if (localPropertiesFile.exists()) {
-                    localPropertiesFile.withReader('UTF-8') { reader ->
-                        localProperties.load(reader)
-                    }
-                }
-                StringBuffer sourcesb = new StringBuffer();
-                project.gradle.ext.allModules.each { m ->
-                    sourcesb.append(m.simpleName);
-                    sourcesb.append(",");
-                }
-                localProperties.setProperty("sourceModules", sourcesb.toString());
-                OutputStream outputstream = new FileOutputStream(localPropertiesFile);
-                localProperties.store(outputstream, "update modules")
-
-                localProperties.setProperty("excludeModules", "")
-                localProperties.store(new FileOutputStream(localPropertiesFile), "update modules")
-            }
-        }
-        project.tasks.create(name: "publishModule", group: 'module chef') {
-            doLast {
-                if (project.hasProperty("moduleName")) {
-                    def moduleName = project.getProperty("moduleName")
-                    includeM(project, moduleName, false)
-                    project.gradle.ext.sourceModuleMap.each { name, module ->
-                        if (name != moduleName) {
-                            project.exec {
-                                executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
-                                workingDir project.rootDir
-                                def argv = []
-                                argv << "${module.sourcePath}:assemble"
-                                argv << "publishToMavenLocal"
-                                args = argv
-                                println("command line:${commandLine}")
-                            }
-                        }
-                    }
-                } else {
-                    throw new IllegalArgumentException("请传想要publish的模块 eg. ./gradlew publishModule -PmoduleName=home-myhome")
-                }
-            }
-        }
-        project.tasks.create(name: "publishFwk", group: 'module chef') {
-            doFirst {
-                if (project.gradle.ext.framworkSrcModuleMap.isEmpty()) {
-                    println("没有framework模块")
-                }
-            }
-            doLast {
-                def ret = []
-                try {
-                    project.gradle.ext.framworkSrcModuleMap.each { name, module ->
-                        ret += name
-                        project.exec {
-                            executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
-                            workingDir project.rootDir
-                            def argv = []
-                            argv << "${module.sourcePath}:publishToMavenLocal"
-                            args = argv
-                            println("command line:${commandLine}")
-                        }
-                    }
-                } catch (Exception ignored) {
-                    println(">>>> 出现异常没有全部发布，需要动手处理一下 !!!!!! !!!!!!")
-                    println("$ignored")
-                } finally {
-                    Collections.sort(ret)
-                    println(">>>> publish ${ret.size()} modules")
-                    println(">>>> ${ret}")
-                }
-            }
-        }
-
-        project.tasks.create(name: "publishBundle", group: 'module chef') {
-            doFirst {
-                if (project.gradle.ext.bundleSrcModuleMap.isEmpty()) {
-                    println("没有bundle模块")
-                }
-            }
-            doLast {
-                def ret = []
-                try {
-                    project.gradle.ext.bundleSrcModuleMap.each { name, module ->
-                        ret += name
-                        project.exec {
-                            executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
-                            workingDir project.rootDir
-                            def argv = []
-                            argv << "${module.sourcePath}:publishToMavenLocal"
-                            args = argv
-                            println("command line:${commandLine}")
-                        }
-                    }
-                } catch (Exception ignored) {
-                    println(">>>> 出现异常没有全部发布，需要动手处理一下 !!!!!! !!!!!!")
-                    println("$ignored")
-                } finally {
-                    Collections.sort(ret)
-                    println(">>>> publish ${ret.size()} modules")
-                    println(">>>> ${ret}")
-                }
-            }
-        }
-/**
- *
- * 模块之间的依赖关系如下
- *        app__
- /   \
- b1     b2
- \     /
- loader
- /  \
- image net ...
- \     /
- common
- * 优化发布：当common模块被编译就将其发布到本地maven，然后再并发编译image net 等模块这个过程集成的是common二进制组件，在本地maven，然后再编译loader，打包出一个供上传使用的包
- */
-        def assemble = project.getTasksByName("assemble", true)
-        project.tasks.create(name: 'publishAll', group: 'module chef', dependsOn: ['includeAll', assemble, 'publishFwk', 'publishBundle'])
-        project.tasks.create(name: "buildBigApp", group: 'module chef', dependsOn: 'includeAll') {
-            doLast {
-                project.exec {
-                    executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
-                    workingDir project.rootDir
-                    def argv = []
-                    argv << "app:assemble"
-                    args = argv
-                }
-            }
-        }
+//        project.tasks.create(name: "includeSourceModule", group: 'module chef') {
+//            doLast {
+//                if (project.hasProperty("moduleName")) {
+//                    def moduleName = project.getProperty("moduleName")
+//                    includeM(project, moduleName, false)
+//                } else {
+//                    throw new IllegalArgumentException("请传想要include的模块 eg. ./gradlew includeSourceModule -PmoduleName=home-myhome")
+//                }
+//            }
+//
+//        }
+//        project.tasks.create(name: "includeBinaryModule", group: 'module chef') {
+//            doLast {
+//                if (project.hasProperty("moduleName")) {
+//                    def moduleName = project.getProperty("moduleName")
+//                    includeM(project, moduleName, true)
+//                } else {
+//                    throw new IllegalArgumentException("请传想要include的模块 eg. ./gradlew includeBinaryModule -PmoduleName=home-myhome")
+//                }
+//            }
+//        }
+//        project.tasks.create(name: "excludeModule", group: 'module chef') {
+//            doLast {
+//                if (project.hasProperty("moduleName")) {
+//                    def moduleName = project.getProperty("moduleName")
+//                    excludeM(project, moduleName)
+//                } else {
+//                    throw new IllegalArgumentException("请传想要exclude的模块 eg. ./gradlew excludeModule -PmoduleName=home-myhome")
+//                }
+//            }
+//        }
+//        project.tasks.create(name: "includeAll", group: 'module chef') {
+//            doLast {
+//                def localProperties = new Properties()
+//                def localPropertiesFile = new File(project.rootDir, 'local.properties')
+//                if (localPropertiesFile.exists()) {
+//                    localPropertiesFile.withReader('UTF-8') { reader ->
+//                        localProperties.load(reader)
+//                    }
+//                }
+//                StringBuffer sourcesb = new StringBuffer();
+//                project.gradle.ext.allModules.each { m ->
+//                    sourcesb.append(m.simpleName);
+//                    sourcesb.append(",");
+//                }
+//                localProperties.setProperty("sourceModules", sourcesb.toString());
+//                OutputStream outputstream = new FileOutputStream(localPropertiesFile);
+//                localProperties.store(outputstream, "update modules")
+//
+//                localProperties.setProperty("excludeModules", "")
+//                localProperties.store(new FileOutputStream(localPropertiesFile), "update modules")
+//            }
+//        }
+//        project.tasks.create(name: "publishModule", group: 'module chef') {
+//            doLast {
+//                if (project.hasProperty("moduleName")) {
+//                    def moduleName = project.getProperty("moduleName")
+//                    includeM(project, moduleName, false)
+//                    project.gradle.ext.sourceModuleMap.each { name, module ->
+//                        if (name != moduleName) {
+//                            project.exec {
+//                                executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
+//                                workingDir project.rootDir
+//                                def argv = []
+//                                argv << "${module.sourcePath}:assemble"
+//                                argv << "publishToMavenLocal"
+//                                args = argv
+//                                println("command line:${commandLine}")
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    throw new IllegalArgumentException("请传想要publish的模块 eg. ./gradlew publishModule -PmoduleName=home-myhome")
+//                }
+//            }
+//        }
+//        project.tasks.create(name: "publishFwk", group: 'module chef') {
+//            doFirst {
+//                if (project.gradle.ext.framworkSrcModuleMap.isEmpty()) {
+//                    println("没有framework模块")
+//                }
+//            }
+//            doLast {
+//                def ret = []
+//                try {
+//                    project.gradle.ext.framworkSrcModuleMap.each { name, module ->
+//                        ret += name
+//                        project.exec {
+//                            executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
+//                            workingDir project.rootDir
+//                            def argv = []
+//                            argv << "${module.sourcePath}:publishToMavenLocal"
+//                            args = argv
+//                            println("command line:${commandLine}")
+//                        }
+//                    }
+//                } catch (Exception ignored) {
+//                    println(">>>> 出现异常没有全部发布，需要动手处理一下 !!!!!! !!!!!!")
+//                    println("$ignored")
+//                } finally {
+//                    Collections.sort(ret)
+//                    println(">>>> publish ${ret.size()} modules")
+//                    println(">>>> ${ret}")
+//                }
+//            }
+//        }
+//
+//        project.tasks.create(name: "publishBundle", group: 'module chef') {
+//            doFirst {
+//                if (project.gradle.ext.bundleSrcModuleMap.isEmpty()) {
+//                    println("没有bundle模块")
+//                }
+//            }
+//            doLast {
+//                def ret = []
+//                try {
+//                    project.gradle.ext.bundleSrcModuleMap.each { name, module ->
+//                        ret += name
+//                        project.exec {
+//                            executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
+//                            workingDir project.rootDir
+//                            def argv = []
+//                            argv << "${module.sourcePath}:publishToMavenLocal"
+//                            args = argv
+//                            println("command line:${commandLine}")
+//                        }
+//                    }
+//                } catch (Exception ignored) {
+//                    println(">>>> 出现异常没有全部发布，需要动手处理一下 !!!!!! !!!!!!")
+//                    println("$ignored")
+//                } finally {
+//                    Collections.sort(ret)
+//                    println(">>>> publish ${ret.size()} modules")
+//                    println(">>>> ${ret}")
+//                }
+//            }
+//        }
+///**
+// *
+// * 模块之间的依赖关系如下
+// *        app__
+// /   \
+// b1     b2
+// \     /
+// loader
+// /  \
+// image net ...
+// \     /
+// common
+// * 优化发布：当common模块被编译就将其发布到本地maven，然后再并发编译image net 等模块这个过程集成的是common二进制组件，在本地maven，然后再编译loader，打包出一个供上传使用的包
+// */
+//        def assemble = project.getTasksByName("assemble", true)
+//        project.tasks.create(name: 'publishAll', group: 'module chef', dependsOn: ['includeAll', assemble, 'publishFwk', 'publishBundle'])
+//        project.tasks.create(name: "buildBigApp", group: 'module chef', dependsOn: 'includeAll') {
+//            doLast {
+//                project.exec {
+//                    executable "$project.rootDir$File.separator" + (isWindows() ? 'gradlew.bat' : 'gradlew')
+//                    workingDir project.rootDir
+//                    def argv = []
+//                    argv << "app:assemble"
+//                    args = argv
+//                }
+//            }
+//        }
     }
 }

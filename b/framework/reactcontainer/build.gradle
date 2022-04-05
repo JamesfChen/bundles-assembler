@@ -1,6 +1,8 @@
 plugins {
     id "io.github.jamesfchen.bundle-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 //repositories {
 ////    maven {
 ////        // All of React Native (JS, Android binaries) is installed from npm

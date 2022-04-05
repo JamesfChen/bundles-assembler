@@ -1,47 +1,34 @@
 package com.jamesfchen.b
 
+
 import org.gradle.api.Project
 
-class AppModulePlugin extends AndroidWithMavenPlugin {
+abstract class AbsParasiteModulePlugin extends AbsAndroidPlugin {
+
     @Override
     String mainPlugin() {
         return 'com.android.application'
     }
+
     @Override
     void addPlugins(Project project) {
-        super.addPlugins(project)
-        Initializer.init(project)
-        project.plugins.apply(Initializer.routerPlugin)
-        if (Initializer.lifecycleVersion) {
-            project.plugins.apply('io.github.jamesfchen.lifecycle-plugin')
-        }
-        if (Initializer.navigationVersion) {
-            project.plugins.apply('androidx.navigation.safeargs')
-//        project.plugins.apply('androidx.navigation.safeargs.kotlin')
-        }
+        //插件包上传到某个服务器
+//        def simepleName = project.gradle.sourcePath2SimpleNameMap[project.path]
+//        if (simepleName) {
+//            project.plugins.apply("io.github.jamesfchen.module-publisher-plugin")
+//            project['publish'].with {
+//                name = simepleName
+//                groupId = project.gradle.groupId
+//                artifactId = simepleName
+//                version = "1.0.0-${project.gradle.activeBuildVariant}-SNAPSHOT"
+//                website = "https://github.com/JamesfChen/bundles-assembler"
+//            }
+//        }
     }
 
     @Override
     void onApply(Project project) {
         super.onApply(project)
-        project.ext{
-            depsConfig = { configuration, simpleName ->
-                //source时，源码什么也不做；binary时，插件包从远处服务器下载并copy到assets目录
-                def module = project.gradle.ext.pluginBinaryModuleMap[simpleName]
-                //该模块是binary，需要被引入到宿主的assets目录
-                if (module) {
-                    //copy to assets dir
-                    if (module.dynamic == 'local-plugin') {
-                        println("module:" + simpleName + ">>> copy to assets dir")
-                    }
-                    return
-                }
-                path = project.moduleify(simpleName)
-                if (path) {
-                    project.dependencies.add(configuration, path)
-                }
-            }
-        }
         project.android {
             defaultConfig {
 //        multiDexEnabled = true//support android 20 or lower
@@ -61,16 +48,16 @@ class AppModulePlugin extends AndroidWithMavenPlugin {
                     v1SigningEnabled true
                     v2SigningEnabled true
                 }
-
             }
             buildTypes {
-                release {
-                    signingConfig signingConfigs.releaseSigningConfig
-                }
                 debug {
                     signingConfig signingConfigs.debugSigningConfig
+                }
+                release {
+                    signingConfig signingConfigs.releaseSigningConfig
                 }
             }
         }
     }
+
 }

@@ -1,6 +1,8 @@
 plugins{
     id "io.github.jamesfchen.foundation-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 android{
 }
 dependencies {

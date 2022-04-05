@@ -13,6 +13,5 @@ class LintModulePlugin extends JarModulePlugin {
                 compileOnly "com.android.tools.lint:lint-checks:${project.rootProject.LINT_VERSION}"
             }
         }
-
     }
 }

@@ -1,6 +1,8 @@
 plugins{
     id "io.github.jamesfchen.api-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 dependencies {
     api "org.jetbrains.kotlin:kotlin-stdlib:${KOTLIN_VERSION}"
 }

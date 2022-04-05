@@ -47,6 +47,7 @@ dependencies {
     project.depsConfig("implementation", "hotel-bundle4")
     project.depsConfig("implementation", "hotel-export")
     project.depsConfig("implementation", "hotel-foundation")
+    project.depsConfig("implementation", "plugin-im-main")
     compileOnly project.moduleify("framework-network")
     compileOnly project.moduleify("framework-common")
     ksp "io.github.jamesfchen:ibc-ksp:1.0.0"

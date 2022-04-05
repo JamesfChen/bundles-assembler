@@ -6,6 +6,8 @@ repluginPluginConfig {
     hostApplicationId = rootProject.applicationId
     hostAppLauncherActivity = "com.jamesfchen.myhome.SplashActivity"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 apply from:"$rootDir/script/app_config.gradle"
 android {
     defaultConfig {

@@ -1,6 +1,8 @@
 plugins{
     id "io.github.jamesfchen.bundle-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 dependencies {
     implementation project.moduleify("hotel-export")
     implementation project.moduleify("hotel-foundation")

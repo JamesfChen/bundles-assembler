@@ -1,7 +1,10 @@
 plugins {
     id "io.github.jamesfchen.foundation-plugin"
 }
+project.plugins.apply('kotlin-android')
+project.plugins.apply('kotlin-kapt')
 apply from: "${rootDir.path}/script/ui_compose.gradle"
+
 android{
     buildFeatures {
         viewBinding true
